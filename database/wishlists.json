@@ -1,0 +1,21 @@
+{
+  "_id": ObjectId,
+  "userId": ObjectId,           // владелец пожелания
+  "items": [
+        {
+            "name": "LEGO Star Wars",
+            "url": "https://lego.com/set/...",
+            "note": "Сокол лучше, чем Звезда Смерти",
+            "createdAt": ISODate
+        },
+        {
+            "name": "LEGO Star Wars",
+            "url": "https://lego.com/set/...",
+            "note": "Сокол лучше, чем Звезда Смерти",
+            "createdAt": ISODate
+        }
+  ]
+}
+
+
+  

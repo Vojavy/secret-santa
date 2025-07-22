@@ -1,0 +1,10 @@
+{
+"_id": "ObjectId",
+"timestamp": "ISODate",
+"logType": "GAME" | "CHAT" | "SYSTEM",
+"actorId": "ObjectId",
+"payload": {
+    "action": "CREATE_GAME" | "JOIN_GAME" | "SEND_MESSAGE" | "UPDATED_GAME" | "PAIR_CREATED" | "DIRECT_MESSAGE_SENT" | "PLAYER_GIFTED" | "PLAYER_REMOVED" | "GAME_ENDED",
+    // детали события
+}
+}

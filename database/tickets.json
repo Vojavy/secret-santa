@@ -1,0 +1,24 @@
+{
+  "_id": ObjectId,                   // Mongo‑PK
+
+  /* ——— Отправитель ——— */
+  "userId": ObjectId("64e1…"),       // ref → users._id (null, если аноним)
+
+  /* ——— Содержание обращения ——— */
+  "category": "bug" | "idea" | "question" | "other",
+  "subject":  "Ошибка на странице оплаты",
+  "message":  "После клика на “Pay” получаю пустой экран…",
+  "attachments": [
+    { "filename": "screenshot.png", "url": "https://cdn…/abc.png", "base64_file": "iVBORw0KGgoAAAANSUhEUgAA…" }
+  ],
+
+  /* ——— Статусная модель ——— */
+  "status":   "open" | "in_progress" | "resolved" | "closed",
+  "priority": "low" | "medium" | "high" | "urgent",
+  "assigneeId": ObjectId("64e9…"),   // сотрудник‑обработчик (optional)
+
+  /* ——— Временные метки ——— */
+  "createdAt":  ISODate("2025‑07‑22T18:41:00Z"),
+  "updatedAt":  ISODate("2025‑07‑22T19:10:00Z"),
+  "resolvedAt": ISODate("2025‑07‑23T09:25:00Z")   // null, пока не закрыт
+}

@@ -1,0 +1,10 @@
+{
+  "_id": ObjectId,
+  "gameId": ObjectId,
+  "senderId": ObjectId,
+  "receiverId": ObjectId,
+  "messageEncrypted": "base64...",
+  // добавить вложение если нужно
+  "createdAt": ISODate
+}
+// сделать отдельного пользователя для анонимных сообщений

@@ -1,0 +1,8 @@
+{
+  "_id": ObjectId,
+  "gameId": ObjectId,
+  "userId": ObjectId,
+  "messageEncrypted": "base64...",   // или plaintext если не шифруешь
+  // добавить вложение если нужно
+  "createdAt": ISODate
+}

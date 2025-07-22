@@ -1,0 +1,20 @@
+{
+  "_id": ObjectId,
+  "userId": ObjectId,
+  "notifications": [
+    {
+      "type": "invite" | "reminder" | "gift_received" | "service",
+      "title": "Тебе пришёл подарок!",
+      "data": { "gameId": ObjectId },
+      "read": false,
+      "createdAt": ISODate
+    },
+    {
+      "type": "invite" | "reminder" | "gift_received" | "service",
+      "title": "Новое сообщение от анонимного игрока",
+      "data": { "gameId": ObjectId, "senderId": ObjectId },
+      "read": false,
+      "createdAt": ISODate
+    }
+  ]
+}

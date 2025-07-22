@@ -1,0 +1,7 @@
+{
+  "_id": ObjectId,
+  "gameId": ObjectId,           // ref → games
+  "userId": ObjectId,           // ref → users
+  "joinedAt": ISODate,
+  "isGifted": false             // пометка «подарок получен»
+}

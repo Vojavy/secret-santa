@@ -1,0 +1,7 @@
+{
+  "_id": ObjectId,
+  "gameId": ObjectId,           // ref → games
+  "gifterId": ObjectId,         // ref → users
+  "receiverId": ObjectId,       // ref → users
+  "createdAt": ISODate
+}

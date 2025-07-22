@@ -1,0 +1,16 @@
+{
+  "_id": ObjectId,
+  "name": "Secret Santa 2025",
+  "description": "Новогодняя игра для друзей", // краткое описание, бюжет
+  "status": "draft" | "active" | "ended",
+  "creatorId": ObjectId,        // ref → users
+  "startAt": ISODate,
+  "endsAt": ISODate,
+  "createdAt": ISODate,
+  "settings": {
+    "anonymous": true,
+    "maxParticipants": 20,
+    "allowChat": true,
+    "allowDirectChat": true     // разрешить личные АНОНИМНЫЕ сообщения
+  }
+}

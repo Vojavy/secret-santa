@@ -1,0 +1,18 @@
+{
+  "_id": ObjectId,                      // отдельный PK
+  "userId": ObjectId("64e1…"),          // ref → users._id
+
+  "firstName": "Jane",
+  "lastName":  "Doe",
+  "gender":    "female",                // "male", "other", …
+  "birthDate": ISODate("1999‑05‑14"),   // день рождения
+
+  "image": "qweqwe===",                 // base64 или URL
+
+  "bio": {
+    "status": "",
+    "trash": ""
+  },          
+
+  "createdAt": ISODate("2025‑07‑22T17:00:00Z")   // когда профиль создан
+}

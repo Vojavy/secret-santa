@@ -1,0 +1,13 @@
+{
+  "_id": ObjectId("64e1…"),
+  "login": "jane_doe",
+  "email": "jane@example.com",
+  "passwordHash": "$2a$12$…",           // BCrypt / Argon2
+  "role": "regular",                    // "admin", "guest"
+  "isActive": true,
+  "isOnline": true,                  
+  "authProviders": [
+    { "provider": "google", "providerId": "10827348" }
+  ],
+  "createdAt": ISODate("2025‑07‑22T17:00:00Z")   // дата регистрации
+}
