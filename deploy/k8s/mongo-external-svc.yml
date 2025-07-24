@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-mongo
+spec:
+  type: ExternalName
+  externalName: mongo.host.internal   # имя, которое резолвит /etc/hosts или DNS

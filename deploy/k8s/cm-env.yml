@@ -1,0 +1,17 @@
+# deploy/k8s/cm-env.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: santa-config
+data:
+  SPRING_PROFILES_ACTIVE: prod
+  REACT_APP_API_URL: https://santa.example.com/api
+---
+# deploy/k8s/secret.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: santa-secret
+type: Opaque
+stringData:
+  MONGO_URI: mongodb://mongo.mongo.svc.cluster.local:27017/secretsanta

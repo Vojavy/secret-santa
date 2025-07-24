@@ -1,0 +1,17 @@
+# deploy/k8s/frontend-deploy.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: santa-frontend
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: santa-frontend } }
+  template:
+    metadata: { labels: { app: santa-frontend } }
+    spec:
+      containers:
+        - name: frontend
+          image: registry.example.com/santa-frontend:1.0.0
+          ports: [{ containerPort: 80 }]
+          envFrom:
+            - configMapRef: { name: santa-config }

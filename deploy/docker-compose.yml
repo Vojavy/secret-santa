@@ -1,0 +1,47 @@
+version: "3.9"
+
+networks:
+  app-net: {}
+
+volumes:
+  m2-cache:
+  node-mod-cache:
+
+services:
+  backend:
+    build: { context: ../backend, target: dev }
+    volumes:
+      - ../backend/src:/app/src:cached
+      - ../backend/target/classes:/app/target/classes
+      - m2-cache:/root/.m2
+    environment:
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+      - JAVA_DEBUG_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    command: >
+      mvn -q spring-boot:run
+      -Dspring-boot.run.jvmArguments="$JAVA_DEBUG_OPTS"
+    expose: ["8080", "35729"]
+    ports:
+      - "5005:5005"
+    networks: [app-net]
+
+  frontend:
+    build:
+      context: ../frontend
+      target: dev
+    environment:
+      - HOST=0.0.0.0
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=300
+      - VITE_API_URL=http://localhost/api
+    volumes:
+      - ../frontend/src:/app/src:cached    # Windows WSL: +cached
+    expose: ["5173"]
+    networks: [app-net]
+
+  nginx:
+    build: ../nginx
+    ports: ["80:80"]
+    depends_on: [frontend, backend]
+    networks: [app-net]
