@@ -1,6 +1,7 @@
 dev.env
 .env
 secret.yml
+database/ssl/
 
 HELP.md
 target/
