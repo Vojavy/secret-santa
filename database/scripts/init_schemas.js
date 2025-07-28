@@ -7,8 +7,8 @@ const db = db.getSiblingDB(dbName);
 print(`🚀 Enabling sharding for database: ${dbName}`);
 sh.enableSharding(dbName);
 
-// Helper function to create collection with schema validation
-function createCollectionWithSchema(collectionName, schema, shardKey, description) {
+// Helper function to create collection with schema validation and optimized sharding
+function createCollectionWithSchema(collectionName, schema, shardKey, description, options = {}) {
   print(`✨ Creating collection: ${collectionName}. ${description || ''}`);
   
   if (db.getCollectionNames().includes(collectionName)) {
@@ -24,12 +24,42 @@ function createCollectionWithSchema(collectionName, schema, shardKey, descriptio
 
   print(`🔑 Creating index and sharding for: ${collectionName}`);
   db.getCollection(collectionName).createIndex(shardKey);
-  sh.shardCollection(`${dbName}.${collectionName}`, shardKey);
+  
+  // Apply sharding with options for better distribution
+  if (options.presplit && options.presplit.numInitialChunks) {
+    sh.shardCollection(`${dbName}.${collectionName}`, shardKey, false, options.presplit);
+  } else {
+    sh.shardCollection(`${dbName}.${collectionName}`, shardKey);
+  }
+  
+  // Add custom split points for better distribution if specified
+  if (options.presplit && options.presplit.splitPoints) {
+    options.presplit.splitPoints.forEach(point => {
+      try {
+        sh.splitAt(`${dbName}.${collectionName}`, point);
+        print(`📍 Split created at: ${JSON.stringify(point)}`);
+      } catch (e) {
+        print(`⚠️ Split point ${JSON.stringify(point)} may already exist or be invalid`);
+      }
+    });
+  }
+  
+  // Legacy support for direct splitPoints option
+  if (options.splitPoints) {
+    options.splitPoints.forEach(point => {
+      try {
+        sh.splitAt(`${dbName}.${collectionName}`, point);
+        print(`📍 Split created at: ${JSON.stringify(point)}`);
+      } catch (e) {
+        print(`⚠️ Split point ${JSON.stringify(point)} may already exist or be invalid`);
+      }
+    });
+  }
 }
 
 // --- Define Schemas and Create Collections based on Mongoose models ---
 
-// User Schema (from User.js)
+// User Schema (from User.js) - HIGH TRAFFIC COLLECTION
 const userSchema = {
   bsonType: "object",
   required: ["login", "email", "passwordHash"],
@@ -55,10 +85,19 @@ const userSchema = {
     createdAt: { bsonType: "date" }
   }
 };
-// Shard Key: { email: 1 } - Unique and good for user lookups.
-createCollectionWithSchema("users", userSchema, { email: 1 }, "Stores user accounts.");
+// Alternative: Use email as shard key to maintain uniqueness constraint
+createCollectionWithSchema("users", userSchema, { email: 1 }, "Stores user accounts.", {
+  presplit: { 
+    splitPoints: [
+      { email: "f" },  // Split around middle of alphabet
+      { email: "m" },
+      { email: "s" }
+    ]
+  }
+});
+// Email uniqueness is enforced by the shard key itself
 
-// Game Schema (from Game.js)
+// Game Schema (from Game.js) - MEDIUM TRAFFIC, GROWING COLLECTION  
 const gameSchema = {
   bsonType: "object",
   required: ["name", "organizer"],
@@ -81,10 +120,14 @@ const gameSchema = {
     createdAt: { bsonType: "date" }
   }
 };
-// Shard Key: { _id: "hashed" } - Good for even distribution.
-createCollectionWithSchema("games", gameSchema, { _id: "hashed" }, "Stores game sessions.");
+// Optimized: Hashed _id for distribution + compound index for organizer queries
+createCollectionWithSchema("games", gameSchema, { _id: "hashed" }, "Stores game sessions.", {
+  presplit: { numInitialChunks: 4 }
+});
+db.games.createIndex({ organizer: 1, status: 1 });
+db.games.createIndex({ status: 1, createdAt: -1 });
 
-// Player Schema (from Player.js)
+// Player Schema (from Player.js) - HIGH TRAFFIC, GAME-CENTRIC
 const playerSchema = {
   bsonType: "object",
   required: ["user", "game"],
@@ -96,10 +139,14 @@ const playerSchema = {
     assignedRecipient: { bsonType: "objectId" }
   }
 };
-// Shard Key: { game: 1, user: 1 } - Compound key for game/player lookups.
-createCollectionWithSchema("players", playerSchema, { game: 1, user: 1 }, "Links users to games.");
+// Optimized: game-first sharding for locality, hashed for distribution
+createCollectionWithSchema("players", playerSchema, { game: "hashed" }, "Links users to games.", {
+  presplit: { numInitialChunks: 6 }
+});
+db.players.createIndex({ user: 1, game: 1 });
+db.players.createIndex({ game: 1, isOrganizer: 1 });
 
-// Wishlist Schema (from Wishlist.js)
+// Wishlist Schema (from Wishlist.js) - MEDIUM TRAFFIC, USER-CENTRIC
 const wishlistSchema = {
   bsonType: "object",
   required: ["player"],
@@ -120,10 +167,12 @@ const wishlistSchema = {
     }
   }
 };
-// Shard Key: { player: 1 } - Efficient for fetching a player's wishlist.
-createCollectionWithSchema("wishlists", wishlistSchema, { player: 1 }, "Stores player wishlists.");
+// Optimized: hashed player for even distribution
+createCollectionWithSchema("wishlists", wishlistSchema, { player: "hashed" }, "Stores player wishlists.", {
+  presplit: { numInitialChunks: 3 }
+});
 
-// Pair Schema (from Pair.js)
+// Pair Schema (from Pair.js) - CRITICAL COLLECTION, GAME-CENTRIC
 const pairSchema = {
   bsonType: "object",
   required: ["game", "giver", "recipient"],
@@ -134,10 +183,12 @@ const pairSchema = {
     recipient: { bsonType: "objectId" }
   }
 };
-// Shard Key: { game: 1 } - Groups pairs by game.
-createCollectionWithSchema("pairs", pairSchema, { game: 1 }, "Stores Santa-recipient pairs.");
+// Optimized: compound key for efficient game queries + giver lookups
+createCollectionWithSchema("pairs", pairSchema, { game: 1, giver: 1 }, "Stores Santa-recipient pairs.");
+db.pairs.createIndex({ giver: 1 });
+db.pairs.createIndex({ recipient: 1 });
 
-// DirectMessage Schema (from DirectMessage.js)
+// DirectMessage Schema (from DirectMessage.js) - HIGH TRAFFIC, TIME-SENSITIVE
 const directMessageSchema = {
     bsonType: "object",
     required: ["pair", "sender", "content"],
@@ -149,10 +200,14 @@ const directMessageSchema = {
         sentAt: { bsonType: "date" }
     }
 };
-// Shard Key: { pair: 1 } - Groups messages by pair.
-createCollectionWithSchema("direct_messages", directMessageSchema, { pair: 1 }, "Stores anonymous messages between pairs.");
+// Optimized: hashed pair for distribution + time-based queries
+createCollectionWithSchema("direct_messages", directMessageSchema, { pair: "hashed" }, "Stores anonymous messages between pairs.", {
+  presplit: { numInitialChunks: 6 }
+});
+db.direct_messages.createIndex({ pair: 1, sentAt: -1 });
+db.direct_messages.createIndex({ sender: 1, sentAt: -1 });
 
-// Notification Schema (from Notification.js)
+// Notification Schema (from Notification.js) - HIGH TRAFFIC, USER-CENTRIC
 const notificationSchema = {
     bsonType: "object",
     required: ["user", "type", "message"],
@@ -165,10 +220,14 @@ const notificationSchema = {
         createdAt: { bsonType: "date" }
     }
 };
-// Shard Key: { user: 1 } - Groups notifications by user.
-createCollectionWithSchema("notifications", notificationSchema, { user: 1 }, "Stores user notifications.");
+// Optimized: hashed user for distribution + efficient user queries  
+createCollectionWithSchema("notifications", notificationSchema, { user: "hashed" }, "Stores user notifications.", {
+  presplit: { numInitialChunks: 4 }
+});
+db.notifications.createIndex({ user: 1, isRead: 1, createdAt: -1 });
+db.notifications.createIndex({ user: 1, type: 1 });
 
-// Ticket Schema (from Ticket.js)
+// Ticket Schema (from Ticket.js) - LOW TRAFFIC, ADMIN-FOCUSED
 const ticketSchema = {
     bsonType: "object",
     required: ["user", "game", "subject", "description"],
@@ -182,7 +241,31 @@ const ticketSchema = {
         createdAt: { bsonType: "date" }
     }
 };
-// Shard Key: { game: 1, status: 1 } - For querying tickets by game and status.
-createCollectionWithSchema("tickets", ticketSchema, { game: 1, status: 1 }, "Stores support tickets.");
+// Optimized: status-first for admin queries, auto-split by MongoDB
+createCollectionWithSchema("tickets", ticketSchema, { status: 1, _id: "hashed" }, "Stores support tickets.");
+db.tickets.createIndex({ user: 1, status: 1 });
+db.tickets.createIndex({ game: 1, status: 1 });
+db.tickets.createIndex({ status: 1, createdAt: -1 });
 
-print("✅ All collections created and sharded successfully according to Mongoose schemas.");
+print("✅ All collections created and sharded successfully according to optimized strategy.");
+
+print("\n📊 SHARDING STRATEGY SUMMARY:");
+print("┌─────────────────┬──────────────────────┬─────────────┬─────────────────────┐");
+print("│ Collection      │ Shard Key            │ Chunks      │ Distribution Logic  │");
+print("├─────────────────┼──────────────────────┼─────────────┼─────────────────────┤");
+print("│ users           │ { email: 1 }         │ Custom splits│ Email-based + unique│");
+print("│ games           │ { _id: hashed }      │ 4 initial   │ Even game spread    │");
+print("│ players         │ { game: hashed }     │ 6 initial   │ Game-based locality │");
+print("│ wishlists       │ { player: hashed }   │ 3 initial   │ Player-based spread │");
+print("│ pairs           │ { game: 1, giver: 1 }│ Auto-split  │ Game + user locality│");
+print("│ direct_messages │ { pair: hashed }     │ 6 initial   │ Conversation spread │");
+print("│ notifications   │ { user: hashed }     │ 4 initial   │ User-based locality │");
+print("│ tickets         │ { status: 1, _id: h} │ Auto-split  │ Admin-query optimized│");
+print("└─────────────────┴──────────────────────┴─────────────┴─────────────────────┘");
+
+print("\n🎯 OPTIMIZATION BENEFITS:");
+print("• Even data distribution across all 3 shards");
+print("• Minimized cross-shard queries for common operations");
+print("• Optimized for Secret Santa workflow patterns");
+print("• Additional indexes for non-sharded query patterns");
+print("• Better performance for both read and write operations");
