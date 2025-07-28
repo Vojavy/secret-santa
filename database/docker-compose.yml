@@ -204,6 +204,8 @@ services:
   init-cluster:
     image: docker:latest
     container_name: init-cluster
+    env_file:
+      - .env
     depends_on:
       - router01
       - configsvr01
