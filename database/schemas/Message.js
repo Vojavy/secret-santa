@@ -1,10 +1,12 @@
-const mongoose = require('mongoose');
-
-const messageSchema = new mongoose.Schema({
-  gameId: { type: mongoose.Schema.Types.ObjectId, ref: 'Game', required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  messageEncrypted: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
-
-module.exports = mongoose.model('Message', messageSchema);
+// MongoDB JSON Schema for mongosh
+var messageSchema = {
+  bsonType: "object",
+  required: ["gameId", "userId", "messageEncrypted"],
+  properties: {
+    _id: { bsonType: "objectId" },
+    gameId: { bsonType: "objectId" },
+    userId: { bsonType: "objectId" },
+    messageEncrypted: { bsonType: "string" },
+    createdAt: { bsonType: "date" }
+  }
+};

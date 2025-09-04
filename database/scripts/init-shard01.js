@@ -1,6 +1,3 @@
-#!/bin/bash
-
-mongosh <<EOF
 var config = {
     "_id": "rs-shard-01",
     "version": 1,
@@ -23,4 +20,3 @@ var config = {
     ]
 };
 rs.initiate(config, { force: true });
-EOF

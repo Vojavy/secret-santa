@@ -33,22 +33,22 @@ echo -e "${YELLOW}⌛ Waiting for shard-03-node-a:27017...${NC}"
 /scripts/wait-for-it.sh shard-03-node-a:27017 -t 30
 
 echo -e "${GREEN}🔧 Initializing config server replica set...${NC}"
-docker exec mongo-config-01 bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates < /scripts/init-configserver.js"
+docker exec mongo-config-01 bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates --file /scripts/init-configserver.js"
 
 echo -e "${GREEN}🔧 Initializing Shard 01 replica set...${NC}"
-docker exec shard-01-node-a bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates < /scripts/init-shard01.js"
+docker exec shard-01-node-a bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates --file /scripts/init-shard01.js"
 
 echo -e "${GREEN}🔧 Initializing Shard 02 replica set...${NC}"
-docker exec shard-02-node-a bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates < /scripts/init-shard02.js"
+docker exec shard-02-node-a bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates --file /scripts/init-shard02.js"
 
 echo -e "${GREEN}🔧 Initializing Shard 03 replica set...${NC}"
-docker exec shard-03-node-a bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates < /scripts/init-shard03.js"
+docker exec shard-03-node-a bash -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates --file /scripts/init-shard03.js"
 
 echo -e "${BLUE}⌛ Waiting 10 seconds for primary election...${NC}"
 sleep 10
 
 echo -e "${BLUE}🚀 Step 3: Initializing the router...${NC}"
-docker exec router-01 sh -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates < /scripts/init-router.js"
+docker exec router-01 sh -c "mongosh --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates --file /scripts/init-router.js"
 
 echo -e "${BLUE}🚀 Step 4: Setting up authentication...${NC}"
 docker exec -e MONGO_ADMIN_USER="$ADMIN_USER" -e MONGO_ADMIN_PASSWORD="$ADMIN_PASS" mongo-config-01 bash -c "chmod +x /scripts/auth.sh && /scripts/auth.sh"
@@ -57,7 +57,7 @@ docker exec -e MONGO_ADMIN_USER="$ADMIN_USER" -e MONGO_ADMIN_PASSWORD="$ADMIN_PA
 docker exec -e MONGO_ADMIN_USER="$ADMIN_USER" -e MONGO_ADMIN_PASSWORD="$ADMIN_PASS" shard-03-node-a bash -c "chmod +x /scripts/auth.sh && /scripts/auth.sh"
 
 echo -e "${BLUE}🚀 Step 5: Creating collections with validation schemas...${NC}"
-docker exec router-01 sh -c "mongosh --port 27017 --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates -u '$ADMIN_USER' --password '$ADMIN_PASS' --authenticationDatabase admin < /scripts/init_schemas.js"
+docker exec router-01 sh -c "mongosh --port 27017 --tls --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowInvalidCertificates -u '$ADMIN_USER' --password '$ADMIN_PASS' --authenticationDatabase admin --file /scripts/init_schemas.js"
 
 echo -e "${GREEN}🎉 Cluster initialization complete!${NC}"
 

@@ -1,19 +1,42 @@
-const mongoose = require('mongoose');
+// MongoDB JSON Schema for User collection
+// Used directly in mongosh for database initialization
 
-const userSchema = new mongoose.Schema({
-  login: { type: String, required: true },
-  email: { type: String, required: true },
-  passwordHash: { type: String, required: true },
-  role: { type: String, enum: ['admin', 'regular'], default: 'regular' },
-  isActive: { type: Boolean, default: true },
-  isOnline: { type: Boolean, default: false },
-  authProviders: [
-    {
-      provider: { type: String, required: true },
-      providerId: { type: String, required: true }
-    }
-  ],
-  createdAt: { type: Date, default: Date.now }
-});
-
-module.exports = mongoose.model('User', userSchema);
+var userSchema = {
+  bsonType: "object",
+  required: ["username", "email", "password"],
+  properties: {
+    _id: { bsonType: "objectId" },
+    username: { bsonType: "string" },
+    email: { bsonType: "string" },
+    password: { bsonType: "string" },
+    role: { enum: ["admin", "regular"] },
+    enabled: { bsonType: "bool" },
+    isOnline: { bsonType: "bool" },
+    
+    // JWT/OAuth2 authentication fields
+    verificationCode: { bsonType: "string" },
+    verificationCodeExpiresAt: { bsonType: "date" },
+    oauthProvider: { bsonType: "string" },
+    oauthId: { bsonType: "string" },
+    avatarUrl: { bsonType: "string" },
+    
+    // OAuth providers support
+    authProviders: {
+      bsonType: "array",
+      items: {
+        bsonType: "object",
+        required: ["provider", "providerId"],
+        properties: {
+          provider: { bsonType: "string" },
+          providerId: { bsonType: "string" },
+          email: { bsonType: "string" },
+          name: { bsonType: "string" }
+        }
+      }
+    },
+    
+    // Timestamps
+    createdAt: { bsonType: "date" },
+    updatedAt: { bsonType: "date" }
+  }
+};

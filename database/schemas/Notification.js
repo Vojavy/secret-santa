@@ -1,16 +1,23 @@
-const mongoose = require('mongoose');
-
-const notificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  notifications: [
-    {
-      type: { type: String, enum: ['invite', 'reminder', 'gift_received', 'service'], required: true },
-      title: { type: String, required: true },
-      data: { type: Object },
-      read: { type: Boolean, default: false },
-      createdAt: { type: Date, default: Date.now }
+// MongoDB JSON Schema for mongosh
+var notificationSchema = {
+  bsonType: "object",
+  required: ["userId"],
+  properties: {
+    _id: { bsonType: "objectId" },
+    userId: { bsonType: "objectId" },
+    notifications: {
+      bsonType: "array",
+      items: {
+        bsonType: "object",
+        required: ["type", "title"],
+        properties: {
+          type: { enum: ["invite", "reminder", "gift_received", "service"] },
+          title: { bsonType: "string" },
+          data: { bsonType: "object" },
+          read: { bsonType: "bool" },
+          createdAt: { bsonType: "date" }
+        }
+      }
     }
-  ]
-});
-
-module.exports = mongoose.model('Notification', notificationSchema);
+  }
+};

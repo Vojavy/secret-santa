@@ -1,6 +1,3 @@
-#!/bin/bash
-
-mongosh <<EOF
 var config = {
 	"_id": "rs-config-server",
 	"configsvr": true,
@@ -24,4 +21,3 @@ var config = {
 	]
 };
 rs.initiate(config, { force: true });
-EOF

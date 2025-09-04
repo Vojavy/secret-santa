@@ -1,15 +1,22 @@
-const mongoose = require('mongoose');
-
-const wishlistSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  items: [
-    {
-      name: { type: String, required: true },
-      url: { type: String },
-      note: { type: String },
-      createdAt: { type: Date, default: Date.now }
+// MongoDB JSON Schema for mongosh
+var wishlistSchema = {
+  bsonType: "object",
+  required: ["userId"],
+  properties: {
+    _id: { bsonType: "objectId" },
+    userId: { bsonType: "objectId" },
+    items: {
+      bsonType: "array",
+      items: {
+        bsonType: "object",
+        required: ["name"],
+        properties: {
+          name: { bsonType: "string" },
+          url: { bsonType: "string" },
+          note: { bsonType: "string" },
+          createdAt: { bsonType: "date" }
+        }
+      }
     }
-  ]
-});
-
-module.exports = mongoose.model('Wishlist', wishlistSchema);
+  }
+};

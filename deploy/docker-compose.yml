@@ -2,6 +2,8 @@ version: "3.9"
 
 networks:
   app-net: {}
+  database_default:
+    external: true
 
 volumes:
   m2-cache:
@@ -10,6 +12,7 @@ volumes:
 services:
   backend:
     build: { context: ../backend, target: dev }
+    env_file: dev.env
     volumes:
       - ../backend/src:/app/src:cached
       - ../backend/target/classes:/app/target/classes
@@ -24,12 +27,15 @@ services:
     expose: ["8080", "35729"]
     ports:
       - "5005:5005"
-    networks: [app-net]
+    networks:
+      - app-net
+      - database_default
 
   frontend:
     build:
       context: ../frontend
       target: dev
+    env_file: dev.env
     environment:
       - HOST=0.0.0.0
       - CHOKIDAR_USEPOLLING=true
@@ -42,6 +48,7 @@ services:
 
   nginx:
     build: ../nginx
+    env_file: dev.env
     ports: ["80:80"]
     depends_on: [frontend, backend]
     networks: [app-net]

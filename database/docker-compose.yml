@@ -14,6 +14,7 @@ services:
       - .env
     volumes:
       - ./scripts:/scripts
+      - ./schemas:/schemas
       - ./ssl:/etc/ssl:ro
       - mongodb_cluster_router01_db:/data/db
       - mongodb_cluster_router01_config:/data/configdb
@@ -215,6 +216,7 @@ services:
     volumes:
       - .:/project
       - ./scripts:/scripts
+      - ./schemas:/schemas
       - ./ssl:/etc/ssl:ro
       - /var/run/docker.sock:/var/run/docker.sock
     entrypoint: ["sh", "-c", "chmod +x /scripts/init_cluster.sh && sh /scripts/init_cluster.sh"]
@@ -236,13 +238,12 @@ services:
   #   entrypoint: ["sh", "-c", "chmod +x /scripts/import_datasets.sh && sh /scripts/import_datasets.sh; tail -f /dev/null"]
   #   restart: "no"
   cli:
-    image: mongo:6.0
+    image: mongo:6.0.2
     env_file:
       - .env
     volumes:
       - ./ssl:/etc/ssl:ro
-    entrypoint: mongosh
-    command: ["$MONGODB_URI"]
+    entrypoint: ["sh", "-c", "echo 'alias mongo=\"mongosh \\\"$$MONGODB_URI\\\"\"' >> ~/.bashrc && echo 'echo \"Tip: Run \\\"mongo\\\" to connect to MongoDB\"' >> ~/.bashrc && tail -f /dev/null"]
     tty: true
     stdin_open: true
 volumes:

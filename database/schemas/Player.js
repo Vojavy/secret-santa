@@ -1,10 +1,12 @@
-const mongoose = require('mongoose');
-
-const playerSchema = new mongoose.Schema({
-  gameId: { type: mongoose.Schema.Types.ObjectId, ref: 'Game', required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  joinedAt: { type: Date, default: Date.now },
-  isGifted: { type: Boolean, default: false }
-});
-
-module.exports = mongoose.model('Player', playerSchema);
+// MongoDB JSON Schema for mongosh
+var playerSchema = {
+  bsonType: "object",
+  required: ["gameId", "userId"],
+  properties: {
+    _id: { bsonType: "objectId" },
+    gameId: { bsonType: "objectId" },
+    userId: { bsonType: "objectId" },
+    joinedAt: { bsonType: "date" },
+    isGifted: { bsonType: "bool" }
+  }
+};
