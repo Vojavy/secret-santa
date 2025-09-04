@@ -38,26 +38,90 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         String registrationId = oauthToken.getAuthorizedClientRegistrationId(); // github, google, etc.
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
 
-        String email = (String) oauth2User.getAttributes().getOrDefault("email", oauth2User.getName());
-        String name = (String) oauth2User.getAttributes().getOrDefault("name", email);
-        String picture = (String) oauth2User.getAttributes().getOrDefault("avatar_url", oauth2User.getAttributes().getOrDefault("picture", null));
+        // 1. Email (GitHub может вернуть null)
+        String email = (String) oauth2User.getAttributes().get("email");
+        if (email == null) {
+            Object loginAttr = oauth2User.getAttributes().get("login");
+            if (loginAttr != null) {
+                email = loginAttr.toString() + "@" + registrationId + ".local";
+            } else {
+                email = oauth2User.getName() + "@" + registrationId + ".local";
+            }
+        }
 
-        Optional<User> existing = userRepository.findByEmail(email);
-        User user = existing.orElseGet(() -> {
-            User u = new User(name, email, "");
+        // 2. Name fallback
+        String name = (String) oauth2User.getAttributes().get("name");
+        if (name == null || name.isBlank()) {
+            Object loginAttr = oauth2User.getAttributes().get("login");
+            name = loginAttr != null ? loginAttr.toString() : email.split("@")[0];
+        }
+
+        // 3. Avatar (GitHub: avatar_url, Google: picture)
+        String picture = null;
+        Object ghAvatar = oauth2User.getAttributes().get("avatar_url");
+        if (ghAvatar != null) picture = ghAvatar.toString();
+        Object googlePic = oauth2User.getAttributes().get("picture");
+        if (picture == null && googlePic != null) picture = googlePic.toString();
+
+        final String finalEmail = email;
+        final String finalName = name;
+        final String finalPicture = picture;
+        final String finalRegistrationId = registrationId;
+        final OAuth2User finalOauth2User = oauth2User;
+
+        // 1. Сначала ищем по OAuth провайдеру и ID (самый надежный способ)
+        Optional<User> existingByOAuth = Optional.empty();
+        try {
+            System.out.println("Searching for user with provider: " + registrationId + " and providerId: " + oauth2User.getName());
+            existingByOAuth = userRepository.findByAuthProvidersProviderAndAuthProvidersProviderId(registrationId, oauth2User.getName());
+            if (existingByOAuth.isPresent()) {
+                System.out.println("Found existing user by OAuth: " + existingByOAuth.get().getId());
+            } else {
+                System.out.println("No user found by OAuth provider and ID");
+            }
+        } catch (Exception e) {
+            // Если метод не найден или есть проблема с базой, игнорируем
+            System.err.println("Warning: Could not search by OAuth provider and ID: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // 2. Если не найден по OAuth, ищем по email
+        Optional<User> existingByEmail = Optional.empty();
+        if (existingByOAuth.isEmpty()) {
+            System.out.println("Searching for user by email: " + finalEmail);
+            existingByEmail = userRepository.findByEmail(finalEmail);
+            if (existingByEmail.isPresent()) {
+                System.out.println("Found existing user by email: " + existingByEmail.get().getId());
+            } else {
+                System.out.println("No user found by email");
+            }
+        }
+
+        // 3. Берем найденного пользователя или создаем нового
+        User user = existingByOAuth.orElse(existingByEmail.orElseGet(() -> {
+            User u = new User(finalName, finalEmail, "");
             u.setEnabled(true);
-            u.setOauthProvider(registrationId);
-            u.setOauthId(oauth2User.getName());
-            if (picture != null) {
-                u.setAvatarUrl(picture);
+            // Используем новый метод для добавления OAuth провайдера
+            u.addAuthProvider(finalRegistrationId, finalOauth2User.getName());
+            if (finalPicture != null) {
+                u.setAvatarUrl(finalPicture);
             }
             return u;
-        });
+        }));
 
-        // Обновление провайдеров если надо
-        if (user.getOauthProvider() == null) {
-            user.setOauthProvider(registrationId);
-            user.setOauthId(oauth2User.getName());
+        // Обновляем OAuth данные, если их нет
+        if (!user.hasAuthProvider(registrationId, oauth2User.getName())) {
+            user.addAuthProvider(registrationId, oauth2User.getName());
+        }
+
+        // Обновляем email, если он отсутствует
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            user.setEmail(email);
+        }
+
+        // Обновляем аватар, если он отсутствует или пустой
+        if (picture != null && (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank())) {
+            user.setAvatarUrl(picture);
         }
 
         userRepository.save(user);
@@ -69,12 +133,15 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         body.put("token", jwt);
         body.put("tokenType", "Bearer");
         body.put("expiresAt", Instant.now().plusMillis(expiresInMs).toString());
-        body.put("user", Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "name", user.getUsernameField(),
-                "avatarUrl", user.getAvatarUrl()
-        ));
+
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("email", user.getEmail());
+        userMap.put("name", user.getUsernameField());
+        if (user.getAvatarUrl() != null) {
+            userMap.put("avatarUrl", user.getAvatarUrl());
+        }
+        body.put("user", userMap);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
@@ -82,4 +149,3 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         objectMapper.writeValue(response.getWriter(), body);
     }
 }
-

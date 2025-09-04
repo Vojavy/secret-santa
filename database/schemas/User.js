@@ -13,14 +13,12 @@ var userSchema = {
     enabled: { bsonType: "bool" },
     isOnline: { bsonType: "bool" },
     
-    // JWT/OAuth2 authentication fields
+    // JWT authentication fields
     verificationCode: { bsonType: "string" },
     verificationCodeExpiresAt: { bsonType: "date" },
-    oauthProvider: { bsonType: "string" },
-    oauthId: { bsonType: "string" },
     avatarUrl: { bsonType: "string" },
     
-    // OAuth providers support
+    // OAuth providers support (unified approach)
     authProviders: {
       bsonType: "array",
       items: {

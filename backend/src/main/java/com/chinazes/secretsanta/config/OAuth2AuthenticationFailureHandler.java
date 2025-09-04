@@ -1,33 +1,38 @@
 package com.chinazes.secretsanta.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
+/**
+ * Handles OAuth2 authentication failures.
+ * Redirects to frontend with error information.
+ */
 @Component
-public class OAuth2AuthenticationFailureHandler implements AuthenticationFailureHandler {
+public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request,
-                                        HttpServletResponse response,
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.setContentType("application/json");
-        objectMapper.writeValue(response.getWriter(), Map.of(
-                "error", "oauth2_auth_failed",
-                "message", exception.getMessage()
-        ));
+
+        String errorMessage = exception.getLocalizedMessage();
+        
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/oauth2/redirect")
+                .queryParam("error", URLEncoder.encode(errorMessage, StandardCharsets.UTF_8))
+                .build().toUriString();
+        
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
-

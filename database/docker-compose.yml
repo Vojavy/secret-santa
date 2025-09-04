@@ -1,4 +1,8 @@
 version: '3'
+networks:
+  default:
+    driver: bridge
+
 services:
 
 ## Router
@@ -6,6 +10,7 @@ services:
     build: 
       context: keyfile
     container_name: router-01
+    hostname: mongo.distrbyt.dev
     command: mongos --port 27017 --configdb rs-config-server/configsvr01:27017,configsvr02:27017,configsvr03:27017 --bind_ip_all --keyFile /data/mongodb-keyfile --tlsMode preferTLS --tlsCertificateKeyFile /etc/ssl/server.pem --tlsCAFile /etc/ssl/server.pem --tlsAllowConnectionsWithoutCertificates --tlsAllowInvalidCertificates
     ports:
       - 27017:27017
@@ -18,6 +23,10 @@ services:
       - ./ssl:/etc/ssl:ro
       - mongodb_cluster_router01_db:/data/db
       - mongodb_cluster_router01_config:/data/configdb
+    networks:
+      default:
+        aliases:
+          - mongo.distrbyt.dev
 ## Config Servers
   configsvr01:
     build: 
@@ -243,7 +252,7 @@ services:
       - .env
     volumes:
       - ./ssl:/etc/ssl:ro
-    entrypoint: ["sh", "-c", "echo 'alias mongo=\"mongosh \\\"$$MONGODB_URI\\\"\"' >> ~/.bashrc && echo 'echo \"Tip: Run \\\"mongo\\\" to connect to MongoDB\"' >> ~/.bashrc && tail -f /dev/null"]
+    entrypoint: ["sh", "-c", "echo 'alias mongo=\"mongosh \\\"$$MONGODB_URI\\\" --tlsAllowInvalidCertificates\"' >> ~/.bashrc && echo 'echo \"Tip: Run \\\"mongo\\\" to connect to MongoDB\"' >> ~/.bashrc && tail -f /dev/null"]
     tty: true
     stdin_open: true
 volumes:

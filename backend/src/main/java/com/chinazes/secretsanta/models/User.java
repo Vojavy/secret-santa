@@ -48,12 +48,6 @@ public class User implements UserDetails {
     @Field("verificationCodeExpiresAt")
     private LocalDateTime verificationCodeExpiresAt;
 
-    @Field("oauthProvider")  // Добавляем согласно гайду
-    private String oauthProvider;
-
-    @Field("oauthId")  // Добавляем согласно гайду
-    private String oauthId;
-
     // OAuth providers как в MongoDB схеме
     @Field("authProviders")
     private List<AuthProvider> authProviders = new ArrayList<>();
@@ -220,30 +214,55 @@ public class User implements UserDetails {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public String getAvatarUrl() {
-        return avatarUrl;
+    // Helper methods for OAuth provider management
+    public AuthProvider findAuthProvider(String provider) {
+        if (authProviders == null) return null;
+        return authProviders.stream()
+                .filter(ap -> provider.equals(ap.getProvider()))
+                .findFirst()
+                .orElse(null);
     }
 
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-        this.updatedAt = LocalDateTime.now();
+    public boolean hasAuthProvider(String provider, String providerId) {
+        if (authProviders == null) return false;
+        return authProviders.stream()
+                .anyMatch(ap -> provider.equals(ap.getProvider()) && providerId.equals(ap.getProviderId()));
     }
 
+    // Compatibility methods for backward compatibility
     public String getOauthProvider() {
-        return oauthProvider;
-    }
-
-    public void setOauthProvider(String oauthProvider) {
-        this.oauthProvider = oauthProvider;
-        this.updatedAt = LocalDateTime.now();
+        if (authProviders == null || authProviders.isEmpty()) return null;
+        return authProviders.get(0).getProvider();
     }
 
     public String getOauthId() {
-        return oauthId;
+        if (authProviders == null || authProviders.isEmpty()) return null;
+        return authProviders.get(0).getProviderId();
     }
 
-    public void setOauthId(String oauthId) {
-        this.oauthId = oauthId;
+    public void setOauthProvider(String provider) {
+        // For backward compatibility - adds/updates first provider
+        if (authProviders == null) {
+            this.authProviders = new ArrayList<>();
+        }
+        if (authProviders.isEmpty()) {
+            authProviders.add(new AuthProvider(provider, null));
+        } else {
+            authProviders.get(0).setProvider(provider);
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setOauthId(String providerId) {
+        // For backward compatibility - adds/updates first provider ID
+        if (authProviders == null) {
+            this.authProviders = new ArrayList<>();
+        }
+        if (authProviders.isEmpty()) {
+            authProviders.add(new AuthProvider(null, providerId));
+        } else {
+            authProviders.get(0).setProviderId(providerId);
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -283,6 +302,7 @@ public class User implements UserDetails {
             this.name = name;
         }
 
+        // Getters and Setters
         public String getProvider() {
             return provider;
         }
@@ -314,5 +334,14 @@ public class User implements UserDetails {
         public void setName(String name) {
             this.name = name;
         }
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+        this.updatedAt = LocalDateTime.now();
     }
 }

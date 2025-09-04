@@ -19,7 +19,7 @@ import java.util.List;
  * Spring Security configuration.
  */
 @Configuration
-@EnableWebSecurity // Enable Spring Security's web security support
+@EnableWebSecurity
 public class SecurityConfiguration {
     
     private final AuthenticationProvider authenticationProvider;
@@ -48,11 +48,11 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/auth/**", "/auth/**", "/oauth2/**", "/login/oauth2/**", "/api/hello", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(o -> o
+                .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
